@@ -1,4 +1,4 @@
-# Benchmark of Node.js Cluster Execution versus Asynchronous Execution
+# Benchmark of Node.js Cluster Serial Execution versus Asynchronous Execution
 
 Asynchronous event-driven programming is at the heart of Node.js, however
 it is also the root cause of
@@ -14,6 +14,8 @@ once using cluster with synchronous I/O, and again with the
 standard asynchronous only approach. 
 A client program generates key-value pairs that are first `PUT` on the server
 and then a `GET` is performed to read the results back.
+The time of each operation is measured and the minimum, maximum,
+total execution time, and number of operations are logged.
 
 The `PUT` command writes a new file using the key as a filename
 at path defined by `config.dataPath`. 
@@ -30,6 +32,15 @@ This design is meant capture how web servers access multiple
 services or data sources asynchronously, and then perform some work 
 combining that data before returning the results.
 
+#### Dependencies
+This benchmark depends on the following NPM packages:
+* [async](https://www.npmjs.org/package/async)
+* [microtime](https://www.npmjs.org/package/microtime)
+
+To install:
+```
+npm install async microtime
+```
 
 ### Configuration Parameters
 
