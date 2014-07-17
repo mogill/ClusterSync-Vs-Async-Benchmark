@@ -1,0 +1,12 @@
+{
+    "dataPath" : "/tmp/Data/",
+    "readsPerWrite" : 3,
+    "valueLen" : 2000,
+    "keyLen"   : 10,
+    "nKeys"  : 100,
+    "nServers"   : 2,
+    "nClients" : 8,
+    "nTimes"   : 30,
+    "serverHostname" : "192.168.0.197",
+    "serverPort" : 8100
+}
