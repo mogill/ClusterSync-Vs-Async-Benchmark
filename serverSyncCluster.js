@@ -8,8 +8,13 @@ var config = require('./config.json');
 var fs = require("fs");
 var http = require('http');
 var url_module = require("url");
+var cluster = require('cluster');
 
 
+if (cluster.isMaster) {
+    for (var i = 0; i < config.nServers; i++)
+        cluster.fork();
+} else {
     http.createServer(function (request, response) {
         var key = url_module.parse(request.url).query.replace('key=', '');
         switch (request.method) {
@@ -53,4 +58,5 @@ var url_module = require("url");
         }
     }).listen(config.serverPort);
 
-    console.log('synchronous server is running: PID=', process.pid);
+    console.log('synchronous server is running: PID=', cluster.worker.process.pid);
+}

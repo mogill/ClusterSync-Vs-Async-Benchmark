@@ -9,6 +9,14 @@ var config = require('./config.json');
 var http = require('http');
 var url_module = require("url");
 var async = require('async');
+var cluster = require('cluster');
+
+
+if (cluster.isMaster) {
+    for (var i = 0; i < config.nServers; i++)
+        cluster.fork();
+    return;
+}
 
 http.createServer(function (request, response) {
     var key = url_module.parse(request.url).query.replace('key=','');
@@ -56,4 +64,4 @@ http.createServer(function (request, response) {
     }
 }).listen(config.serverPort);
 
-console.log('Asynchronous server is running. PID=', process.pid);
+console.log('Asynchronous server is running., PID=', process.pid);
