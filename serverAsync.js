@@ -17,14 +17,16 @@ http.createServer(function (request, response) {
             var asyncTasks = [];
             for (var i = 0; i < config.nTimes; i++) {
                 asyncTasks.push(function (cb) {
-                    var data = fs.readFileSync(config.dataPath + key, 'utf8');
-                    cb(null, JSON
+                    fs.readFile(config.dataPath + key, 'utf8', function (err, data) {
+                        if (err) return cb(err);
+                        cb(null, JSON
                             .parse(data)
                             .sort()
                             .reduce(function (previousValue, currentValue) {
                                 return previousValue + currentValue;
                             }) + data
-                    )
+                        )
+                    })
                 })
             }
             async.parallel(asyncTasks, function (err, asyncResults) {
