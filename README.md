@@ -1,101 +1,92 @@
-# Benchmark of Node.js Cluster Serial Execution versus Asynchronous Execution
+# Benchmark Comparing Asynchronous Execution to Serial Execution in a Parallel Context 
 
 Asynchronous event-driven programming is at the heart of Node.js, however
 it is also the root cause of
 [Callback Hell](http://callbackhell.com/)
 The purpose of asynchronous execution is to overlap computation with communication and I/O,
 which can be achieved in other ways.
- 
+
 
 ## Description of Benchmark
 
-A rudimentary web server is implemented twice, 
-once using cluster with synchronous I/O, and again with the
-standard asynchronous only approach. 
-A client program generates key-value pairs that are first `PUT` on the server
-and then a `GET` is performed to read the results back.
+A rudimentary web server is implemented twice:
+once in the conventional async callback style, and again
+with synchronous file I/O, using Node's built-in cluster module to provide
+non-blocking concurrency.  A `GET` request to the server returns the contents of the
+requested file, `POST`ed data is write-appended to the requested file
+at path defined by `config.dataPath`. 
+
+There is one client program that is used to benchmark both server programs.
+The client generates `config.readsPerWrite` many `GET` requests for each 
+`POST` request, receiving a response for each request before proceeding to the next.
+The `config.nFiles` are read or appended to in round-robin order.
 The time of each operation is measured and the minimum, maximum,
 total execution time, and number of operations are logged.
 
-The `PUT` command writes a new file using the key as a filename
-at path defined by `config.dataPath`. 
-Keys are random lower case strings and the file contents are the value 
-of the key-value pair.
-The `GET` commands read the file back, 
-sort and reduce the data, then return the file.
+A `GET` request first reads the file, 
+using the string `config.sortSplitString` splits the file's contents into a list, 
+sorts that list, concatenates the list into a string, and then returns the sorted results.
+Choosing a `config.sortSplitString` not found in the file minimizes the amount
+of compute work per request, using a null string (`''`) maximizes the amount of
+compute work per request.  
 
-The benchmark allows the user to specify the number `GETs` per `PUT`, 
-the number and length of records to store, 
-and the number of times the server should read data from a file 
-and do computational work before returning a results to a `GET` request. 
-This design is meant capture how web servers access multiple 
-services or data sources asynchronously, and then perform some work 
-combining that data before returning the results.
 
-#### Dependencies
-This benchmark depends on the following NPM packages:
-* [async](https://www.npmjs.org/package/async)
-* [microtime](https://www.npmjs.org/package/microtime)
+## Running the benchmark
 
-To install:
-```
-npm install async microtime
-```
-
-### Configuration Parameters
-
-Configuration parameters for both servers and the client are in `config.json`:
+The `config.json` is shared by both sync and async servers and all the client
+processes, it specifies all the parameters of the experiment to be performed.
 
 ```javascript
 {
-    "dataPath" : "/tmp/Data/",          // Directory the server writes to
-    "readsPerWrite" : 3,                // # times to read before writing again
-    "valueLen" : 2000,                  // Length of array of values
-    "keyLen"   : 10,                    // Length of key's random string
-    "nKeys"  : 1000,                    // Number of K-V pairs to generate
-    "nServers"   : 2,                   // # Cluster server processes
-    "nClients" : 8,                     // # client processes
-    "nTimes"   : 30,                    // # times read+work is performed for each request
-    "serverHostname" : "192.168.0.197", // Address of server
-    "serverPort" : 8100                 // Port to be used/shared
+  "dataPath" : "/tmp/Data/",   // Path to data files
+  "readsPerWrite" : 10,        // Number of reads performed for each write operations
+  "value" : "This is text that is appended to the file",
+  "sortSplitString" : "This is text that is",  // Governs number of elements to be sorted
+  "nFiles"  : 30,              // Number of different files
+  "nOperations": 10000,        // Total number of read and write operations 
+  "nServers" : 5,              // Sync only: number of processes to fork
+  "nClients" : 5,              // Number of concurrent client processes making requests
+  "serverHostname" : "localhost",
+  "serverPort" : 8100
 }
 ```
 
+The server and client are started separately, for example:
+```bash
+node serverSync.js &   # Start the synchronous server in the background
+node client            # Run the experiment
+```
+
 ### Output
-Upon completion the client outputs CSV file that can be imported
-into a spreadsheet and rendered as a Candlestick Chart.
+Upon completion the client outputs a CSV file that can be imported
+into a spreadsheet and rendered as a Candlestick Chart showing the
+range of performance (min and max time for any single request),
+as well as the average of all the operations.
 The timings are in microseconds.
 
 ```
 PUT/GET, Min, Mean, 101% of Mean, Max
-PUT, 69073, 181707.07692307694, 183524.1476923077, 281225
-GET, 122383, 202376.12820512822, 204399.8894871795, 295500
-PUT, 59430, 185643.23076923078, 187499.66307692308, 282418
-GET, 101810, 203075.28205128206, 205106.0348717949, 272983
-PUT, 101387, 188798.23076923078, 190686.2130769231, 234446
-GET, 111785, 204963.1794871795, 207012.8112820513, 330102
-PUT, 50711, 179683.92307692306, 181480.7623076923, 247945
-GET, 101580, 206920.66666666666, 208989.87333333332, 300569
-PUT, 68411, 167523, 169198.23, 274930
-GET, 100823, 210480.76923076922, 212585.5769230769, 313219
-PUT, 110468, 202638.46153846153, 204664.84615384616, 341598
-GET, 83200, 200546.84615384616, 202552.31461538462, 313419
-PUT, 101208, 196143.15384615384, 198104.58538461538, 327109
-GET, 90774, 203309.58974358975, 205342.68564102566, 345158
-PUT, 94198, 188954.46153846153, 190844.00615384616, 312341
-GET, 82319, 207232.23076923078, 209304.5530769231, 291446
+PUT process 4, 1346.1969604492188, 2441.530764401614, 2465.94607204563, 7250.4439697265625
+GET process 4, 1063.0139770507812, 2313.1135800805423, 2336.244715881348, 54835.06396484375
+PUT process 2, 1634.1809692382812, 2434.181318010603, 2458.5231311907087, 6623.343017578125
+GET process 2, 1221.9420166015625, 2321.444990135, 2344.65944003635, 54996.54602050781
+PUT process 1, 1464.7319946289062, 2501.2274880880836, 2526.2397629689644, 23142.98602294922
+GET process 1, 1039.89599609375, 2317.8814424991083, 2341.0602569240996, 55010.34503173828
+PUT process 3, 1378.7010498046875, 2403.0054156963643, 2427.035469853328, 5370.8470458984375
+GET process 3, 1087.3759765625, 2334.550022272125, 2357.895522494846, 54824.252014160156
+PUT process 5, 1311.260986328125, 2435.731684087397, 2460.0890009282707, 10563.859985351562
+GET process 5, 932.0089721679688, 2321.715999993554, 2344.9331599934894, 54723.63000488281
 ```
+
+__NOTE__: The _"101% of Mean"_ gives a non-zero width to the mean.
+In a Candlestick Chart, the mean is a range, this causes the range (width)
+of the mean to be 1% of the total range, making it visible. 
 
 
 ### Example Results
-![ClusterVsAsyncLatency](http://synsem.com/ClusterVsAsyncLatency.png)
-
-Latency of 8 clients concurrently accessing 1 server running on 2 cores. Error bars show the minimum and maximum measured time for an individual operation, the marker indicates the average time to complete an operation.
-
-The cluster server has lower latency than the async server in the average case, and the average case is closer to the minimum latency. Variability of the average operation time is lower for the cluster server. 
-
+**__Coming Soon__**
 
 
 ## License
 This program is published under the revised BSD license.  Other commercial licenses
-may be arranged with the author.
+may be arranged with the author (info@synsem.com).

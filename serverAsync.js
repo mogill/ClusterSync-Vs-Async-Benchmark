@@ -1,49 +1,49 @@
+#!/usr/bin/env node
 /*-----------------------------------------------------------------------------+
- |  Cluster/Async I/O Benchmark                                Version 0.1.0   |
+ |  Cluster/Async I/O Benchmark                                Version 1.0.0   |
  +------------------------------------------------+----------------------------+
  |  Copyright 2014, Synthetic Semantics LLC       |       http://synsem.com/   |
+ |  Copyright 2015-2016, Jace A Mogill            |        mogill@synsem.com   |
  |  Released under the Revised BSD License        |          info@synsem.com   |
  +------------------------------------------------+----------------------------*/
-var fs = require("fs");
 var config = require('./config.json');
+var fs = require("fs");
 var http = require('http');
 var url_module = require("url");
-var async = require('async');
 
 http.createServer(function (request, response) {
-    var key = url_module.parse(request.url).query.replace('key=','');
-    switch(request.method) {
-        case 'GET':
-            var asyncTasks = [];
-            for (var i = 0; i < config.nTimes; i++) {
-                asyncTasks.push(function (cb) {
-                    var data = fs.readFileSync(config.dataPath + key, 'utf8');
-                    cb(null, JSON
-                            .parse(data)
-                            .sort()
-                            .reduce(function (previousValue, currentValue) {
-                                return previousValue + currentValue;
-                            }) + data
-                    )
-                })
-            }
-            async.parallel(asyncTasks, function (err, asyncResults) {
-                response.writeHead(200, {'Content-Type': 'text/plain'});
-                response.end(JSON.stringify(asyncResults));
+    var key = url_module.parse(request.url).query.replace('key=', '');
+    switch (request.method) {
+        case 'GET':  // Asynchronous Response Generation
+            fs.readFile(config.dataPath + key, 'utf8', function(err, value) {
+                if (err) {
+                    // Return File Not Found if file hasn't yet been created
+                    response.writeHead(404, {'Content-Type': 'text/plain'});
+                    response.end("The file (" + config.dataPath + key + ") does not yet exist.");
+                } else {
+                    // If the file exists, read it and return the sorted contents
+                    var sorted = value.split(config.sortSplitString).sort().join('');
+                    response.writeHead(200, {'Content-Type': 'text/plain'});
+                    response.end(sorted);
+                }
             });
             break;
-        case 'POST':
+        case 'POST':  // Synchronously append POSTed data to a file
             var postData = '';
             request
-                .on('data', function (data) { postData += data; })
+                .on('data', function (data) {
+                    postData += data;
+                })
                 .on('end', function () {
-                    fs.writeFile(config.dataPath + key, postData, 'utf8', function(err) {
-                        if(err) {
+                    fs.appendFile(config.dataPath + key, postData, function(err) {
+                        if (err) {
+                            //  Return error if unable to create/append to the file
                             response.writeHead(400, {'Content-Type': 'text/plain'});
-                            response.end('Error: Unable to write file?' + err);
+                            response.end('Error: Unable to write file: ' + err);
                         } else {
+                            //  Write or append posted data to a file, return "success" response
                             response.writeHead(200, {'Content-Type': 'text/plain'});
-                            response.end('post was ok');
+                            response.end('success');
                         }
                     });
                 });
@@ -54,4 +54,4 @@ http.createServer(function (request, response) {
     }
 }).listen(config.serverPort);
 
-console.log('synchronous server is running.');
+console.log('synchronous server is running: ', config.serverPort);
