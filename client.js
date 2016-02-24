@@ -44,10 +44,10 @@ function fileN(iterationN) {
 }
 
 
-function doPost(iterationN, itersRemaining) {
+function doPost(iterationN, itersRemaining, keepAliveAgent) {
     writeTimer.start();
     var request = http.request({
-        agent: false,
+        agent: keepAliveAgent,
         host: config.serverHostname,
         port: config.serverPort,
         path: '/put?key=' + "file" + fileN(iterationN),
@@ -64,7 +64,7 @@ function doPost(iterationN, itersRemaining) {
             } else {
                 writeTimer.stop();
                 // console.log('PUT: iter=', iterationN, '  str=', responseString, '   len=', responseString.length);
-                rwLoop(iterationN + 1, itersRemaining - 1);
+                rwLoop(iterationN + 1, itersRemaining - 1, keepAliveAgent);
             }
         });
     });
@@ -79,9 +79,10 @@ function doPost(iterationN, itersRemaining) {
 }
 
 
-function doGet(iterationN, itersRemaining) {
+function doGet(iterationN, itersRemaining, keepAliveAgent) {
     readTimer.start();
     var get = http.get({
+        agent: keepAliveAgent,
         host: config.serverHostname,
         port: config.serverPort,
         path: '/get?key=' + "file" + fileN(iterationN)
@@ -94,7 +95,7 @@ function doGet(iterationN, itersRemaining) {
         response.on('end', function () {
             readTimer.stop();
             // console.log('GET: iter=', iterationN, '  str=', responseString, '   len=', responseString.length);
-            rwLoop(iterationN + 1, itersRemaining - 1);
+            rwLoop(iterationN + 1, itersRemaining - 1, keepAliveAgent);
         });
 
         response.on('error', function (err) {
@@ -109,7 +110,7 @@ function doGet(iterationN, itersRemaining) {
 }
 
 
-function rwLoop(iterN, itersRemaining) {
+function rwLoop(iterN, itersRemaining, keepAliveAgent) {
     if (itersRemaining > 0) {
         /*
         if (iterN % 500 === 0) {
@@ -117,9 +118,9 @@ function rwLoop(iterN, itersRemaining) {
         }
         */
         if (iterN % (config.readsPerWrite + 1) == 0) {
-            doPost(iterN, itersRemaining);
+            doPost(iterN, itersRemaining, keepAliveAgent);
         } else {
-            doGet(iterN, itersRemaining);
+            doGet(iterN, itersRemaining, keepAliveAgent);
         }
     } else {
         var writeMean = writeTimer.elapsed / writeTimer.nCalls;
@@ -146,10 +147,11 @@ if (cluster.isMaster) {
     });
     */
 } else {
+    var keepAliveAgent = new http.Agent({ keepAlive: true });
     var writeTimer = new Timer();
     var readTimer = new Timer();
     var itersPerProc = config.nOperations / config.nClients;
     var startIter = itersPerProc * process.env.processN;
-    rwLoop(startIter, itersPerProc);
+    rwLoop(startIter, itersPerProc, keepAliveAgent);
     //console.log('synchronous client is running: ', cluster.worker.process.pid);
 }

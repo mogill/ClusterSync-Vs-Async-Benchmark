@@ -2,7 +2,7 @@
 
 Asynchronous event-driven programming is at the heart of Node.js, however
 it is also the root cause of
-[Callback Hell](http://callbackhell.com/)
+[Callback Hell](http://callbackhell.com/).
 The purpose of asynchronous execution is to overlap computation with communication and I/O,
 which can be achieved in other ways.
 
@@ -11,7 +11,7 @@ which can be achieved in other ways.
 
 A rudimentary web server is implemented twice:
 once in the conventional async callback style, and again
-with synchronous file I/O, using Node's built-in cluster module to provide
+with synchronous file I/O but using Node's built-in cluster module to provide
 non-blocking concurrency.  A `GET` request to the server returns the contents of the
 requested file, `POST`ed data is write-appended to the requested file
 at path defined by `config.dataPath`. 
