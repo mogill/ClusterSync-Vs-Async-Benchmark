@@ -39,8 +39,8 @@ function Timer() {
 
 
 function fileN(iterationN) {
-    var nChimes = Math.floor(iterationN / config.nFiles);
-    return ("00000"+((iterationN - nChimes) % config.nFiles)).slice(-5);
+    var nChimes = Math.floor(iterationN / config.readsPerWrite);
+    return ("00000"+(nChimes % config.nFiles)).slice(-5);
 }
 
 
@@ -150,8 +150,8 @@ if (cluster.isMaster) {
     var keepAliveAgent = new http.Agent({ keepAlive: true });
     var writeTimer = new Timer();
     var readTimer = new Timer();
-    var itersPerProc = config.nOperations / config.nClients;
+    var itersPerProc = Math.floor(config.nOperations / config.nClients);
     var startIter = itersPerProc * process.env.processN;
+    // console.log("Synchornous client ", cluster.worker.process.pid, " (", process.env.processN, ")  starting iter=", startIter, "    remaining:", itersPerProc);
     rwLoop(startIter, itersPerProc, keepAliveAgent);
-    //console.log('synchronous client is running: ', cluster.worker.process.pid);
 }

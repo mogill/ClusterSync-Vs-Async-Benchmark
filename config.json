@@ -1,12 +1,12 @@
 {
   "dataPath" : "/tmp/Data/",
-  "readsPerWrite" : 100,
+  "readsPerWrite" : 10,
   "value" : "This is text that is appended to the file",
   "sortSplitString" : "This is text that is",
   "nFiles"  : 30,
-  "nOperations": 40000,
-  "nServers" : 5,
-  "nClients" : 5,
+  "nOperations": 100000,
+  "nServers" : 12,
+  "nClients" : 64,
   "serverHostname" : "localhost",
   "serverPort" : 8100
 }
