@@ -84,7 +84,22 @@ of the mean to be 1% of the total range, making it visible.
 
 
 ### Example Results
-**__Coming Soon__**
+![Total Execution Time for 200,000 Requests](http://synsem.com/SyncNotAsync/Figures/runtime.svg)
+Total execution time to perform 140,000 GET, and 60,000 PUT operations.
+The overhead of scheduling asynchronous tasks makes the conventional
+async execution model slower than synchronous execution in practically all cases.
+A nearly 10x speedup is achieved with only 4 server processes due to the
+combine benefits of multi-core execution and reduced scheduling overhead.
+
+![Latency of Asynchronous Server](http://synsem.com/SyncNotAsync/Figures/runtime.async.svg)
+Minimum, maximum, and average latencies measured by the 32 client processes.
+Average latency is ~5 seconds for write-append PUTs, and
+~6 seconds to read, process, and respond to <code>GET</code> requests.
+
+![Latency of Asynchronous Server](http://synsem.com/SyncNotAsync/Figures/runtime.sync.svg)
+Average latency is approximately 1/10th of the asynchronous server,
+corresponding to the nearly 10x total execution time difference.
+Worst-case latency for <code>PUT</code>s is about half that of the asynchronous server.
 
 
 ## License
