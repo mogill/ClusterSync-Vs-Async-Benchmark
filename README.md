@@ -9,14 +9,19 @@ which can be achieved in other ways.
 
 ## Description of Benchmark
 
-A rudimentary web server is implemented twice:
-once in the conventional async callback style, and again
-with synchronous file I/O but using Node's built-in cluster module to provide
-non-blocking concurrency.  A `GET` request to the server returns the contents of the
+A rudimentary web server is implemented four times:
+
+- Async callback file I/O
+- Synchronous file I/O
+- Async callback file I/O and multiple 'cluster' servers
+- Synchronous file I/O and multiple 'cluster' servers
+
+  
+A `GET` request to the server returns the contents of the
 requested file, `POST`ed data is write-appended to the requested file
 at path defined by `config.dataPath`. 
 
-There is one client program that is used to benchmark both server programs.
+There is one client program that is used to benchmark the server programs.
 The client generates `config.readsPerWrite` many `GET` requests for each 
 `POST` request, receiving a response for each request before proceeding to the next.
 The `config.nFiles` are read or appended to in round-robin order.
@@ -33,7 +38,7 @@ compute work per request.
 
 ## Running the benchmark
 
-The `config.json` is shared by both sync and async servers and all the client
+The `config.json` is used by both servers the client
 processes, it specifies all the parameters of the experiment to be performed.
 
 ```javascript
@@ -57,7 +62,7 @@ node serverSync.js &   # Start the synchronous server in the background
 node client            # Run the experiment
 ```
 
-A script to run benchmarks varying the number of clients and servers is included:
+A script to run a parameter-sweep benchmark, varying the number of clients and servers:
 ```bash
 run_benchmark.sh
 ```
