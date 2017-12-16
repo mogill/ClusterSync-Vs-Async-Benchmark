@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*-----------------------------------------------------------------------------+
  |  Cluster/Async I/O Benchmark                                Version 2.0.0   |
  +------------------------------------------------+----------------------------+
@@ -6,11 +5,19 @@
  |  Copyright 2015-2017, Jace A Mogill            |        mogill@synsem.com   |
  |  Released under the Revised BSD License        |          info@synsem.com   |
  +------------------------------------------------+----------------------------*/
-var config = require('./config.json');
 var fs = require("fs");
+var config = require('./config.json');
 var http = require('http');
-var async = require('async');
 var url_module = require("url");
+var async = require('async');
+var cluster = require('cluster');
+
+
+if (cluster.isMaster) {
+    for (var i = 0; i < config.nServers; i++)
+        cluster.fork();
+    return;
+}
 
 http.createServer(function (request, response) {
     var key = url_module.parse(request.url).query.replace('key=','');
@@ -36,20 +43,16 @@ http.createServer(function (request, response) {
                 response.end(JSON.stringify(asyncResults));
             });
             break;
-        case 'POST':  // Synchronously append POSTed data to a file
+        case 'POST':
             var postData = '';
             request
-                .on('data', function (data) {
-                    postData += data;
-                })
+                .on('data', function (data) { postData += data; })
                 .on('end', function () {
-                    fs.appendFile(config.dataPath + key, postData, function(err) {
-                        if (err) {
-                            //  Return error if unable to create/append to the file
+                    fs.writeFile(config.dataPath + key, postData, 'utf8', function(err) {
+                        if(err) {
                             response.writeHead(400, {'Content-Type': 'text/plain'});
-                            response.end('Error: Unable to write file: ' + err);
+                            response.end('Error: Unable to write file?' + err);
                         } else {
-                            //  Write or append posted data to a file, return "success" response
                             response.writeHead(200, {'Content-Type': 'text/plain'});
                             response.end('success');
                         }
@@ -62,4 +65,4 @@ http.createServer(function (request, response) {
     }
 }).listen(config.serverPort);
 
-console.log('Asynchronous server is running. PID=', process.pid);
+console.log('Asynchronous server is running., PID=', process.pid);

@@ -1,9 +1,9 @@
 #!/bin/bash
 # +-----------------------------------------------------------------------------+
-# |  Cluster/Async I/O Benchmark                                Version 1.1.0   |
+# |  Cluster/Async I/O Benchmark                                Version 2.0.0   |
 # +------------------------------------------------+----------------------------+
 # |  Copyright 2014, Synthetic Semantics LLC       |       http://synsem.com/   |
-# |  Copyright 2015-2016, Jace A Mogill            |        mogill@synsem.com   |
+# |  Copyright 2015-2017, Jace A Mogill            |        mogill@synsem.com   |
 # |  Released under the Revised BSD License        |          info@synsem.com   |
 # +------------------------------------------------+----------------------------+
 
@@ -48,16 +48,35 @@ EOF
 rm -f runlog.*
 
 for nClients in 32 1 8 16 4 2 ; do
-    # Synchronous Server
+    # Synchronous Cluster Servers
     for nServers in 24 1 2 16 4 8 ; do
         init_experiment
-        node serverSync.js ${nServers} &
-        (time node client) 2>&1 | tee runlog.sync.nServers.${nServers}.nClients.${nClients}
+        node serverSyncCluster.js ${nServers} &
+        sleep .3
+        (time node client) 2>&1 | tee runlog.syncCluster.nServers.${nServers}.nClients.${nClients}
     done
 
-    # Aynchronous Server
+    # Synchronous Single Server
+    nServers=1
+    init_experiment
+    node serverSync.js ${nServers} &
+    sleep .3
+    (time node client) 2>&1 | tee runlog.sync.nServers.${nServers}.nClients.${nClients}
+
+    # Asynchronous Cluster Servers
+    for nServers in 24 1 2 16 4 8 ; do
+        init_experiment
+        node serverAsyncCluster.js ${nServers} &
+        sleep .3
+        (time node client) 2>&1 | tee runlog.asyncCluster.nServers.${nServers}.nClients.${nClients}
+    done
+
+    # Asynchronous Single Server
     nServers=1
     init_experiment
     node serverAsync.js &
+    sleep .3
     (time node client) 2>&1 | tee runlog.async.nServers.${nServers}.nClients.${nClients}
 done
+
+killall node
